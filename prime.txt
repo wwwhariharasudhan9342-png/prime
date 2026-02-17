@@ -1,0 +1,68 @@
+import nltk
+import re
+import string
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+
+nltk.download('punkt', quiet=True)
+nltk.download('stopwords', quiet=True)
+
+stop_words = set(stopwords.words('english'))
+
+texts = [
+    "i am very happy",
+    "this is amazing",
+    "i love this product",
+    "you are doing great",
+    "i feel fantastic today",
+    "that was wonderful",
+    "this makes me smile",
+    "i am excited about this",
+    "everything is awesome",
+    "i am proud of you",
+
+    "i am very sad",
+    "this is terrible",
+    "i hate this",
+    "i feel disappointed",
+    "this is the worst",
+    "i am upset",
+    "this makes me frustrated",
+    "i am not happy"
+]
+
+labels = [1]*10 + [0]*8  # 18 texts total, 10 positive (1), 8 negative (0)
+
+def preprocess(text):
+    text = text.lower()
+    text = re.sub(r'\d+', '', text)
+    text = text.translate(str.maketrans('', '', string.punctuation))
+    tokens = word_tokenize(text)
+    tokens = [w for w in tokens if w not in stop_words]
+    return " ".join(tokens)
+
+processed_texts = [preprocess(t) for t in texts]
+
+
+vectorizer = TfidfVectorizer()
+X = vectorizer.fit_transform(processed_texts)
+
+model = LogisticRegression()
+model.fit(X, labels)
+
+print("Chatbot ready! Type 'exit' to stop.\n")
+
+while True:
+    user_input = input("You: ")
+    if user_input.lower() == 'exit':
+        print("Chatbot: Goodbye!")
+        break
+    processed_input = preprocess(user_input)
+    input_vector = vectorizer.transform([processed_input])
+    prediction = model.predict(input_vector)[0]
+    if prediction == 1:
+        print("Chatbot: You sound positive!")
+    else:
+        print("Chatbot: You seem upset.")
